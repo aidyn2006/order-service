@@ -1,10 +1,10 @@
-package handlers
+package http
 
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"order-service/internal/domain/models"
 	"order-service/internal/domain/services"
-	"order-service/models"
 )
 
 func CreateOrder(c *gin.Context) {

@@ -1,10 +1,10 @@
 package services
 
 import (
-	"order-service/models"
-	"order-service/repositories"
+	"order-service/internal/domain/models"
+	"order-service/internal/repository"
 )
 
 func CreateOrderService(order *models.Order) error {
-	return repositories.CreateOrder(order)
+	return repository.CreateOrder(order)
 }
