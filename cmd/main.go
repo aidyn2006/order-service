@@ -1,27 +1,55 @@
+// @title Order Service API
+// @version 1.0
+// @description This is an API for managing orders
+// @host localhost:8081
+// @BasePath /
+// @schemes http
 package main
 
 import (
-	"github.com/gin-gonic/gin"
 	"log"
-	"order-service/internal/domain/services"
+	"order-service/config"
+	"order-service/db"
+	"order-service/internal/delivery/http/handlers"
 	"order-service/internal/repository"
-	"order-service/internal/transport/http"
-	"order-service/pkg/database"
+	"order-service/internal/usecase"
+	"order-service/pkg/inventory"
 )
 
 func main() {
-	db := database.InitDB()
+	// Load configuration
+	cfg := config.Load()
 
-	orderRepo := repository.NewOrderRepository(db)
-	orderService := services.NewOrderService(orderRepo)
-	orderHandler := http.NewOrderHandler(orderService)
+	// Initialize database connection
+	dbConn, err := db.NewPostgresDB(cfg.DB)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	router := gin.Default()
+	// Run migrations
+	db.RunMigrations(dbConn)
 
-	router.POST("/orders", orderHandler.CreateOrder)
-	router.GET("/orders/:id", orderHandler.GetOrderById)
-	router.PATCH("/orders/:id", orderHandler.UpdateOrderStatus)
+	// Initialize inventory client
+	inventoryClient := inventory.NewClient(cfg)
 
-	log.Println("Order Service is running on port 8081...")
-	router.Run(":8081")
+	// Initialize repositories
+	orderRepo := repository.NewOrderRepository(dbConn)
+	orderItemRepo := repository.NewOrderItemRepository(dbConn)
+
+	// Initialize use cases
+	orderUseCase := usecase.NewOrderUseCase(orderRepo, orderItemRepo, inventoryClient)
+	orderItemUseCase := usecase.NewOrderItemUseCase(orderItemRepo)
+
+	// Initialize HTTP handlers
+	orderHandler := handlers.NewOrderHandler(orderUseCase)
+	orderItemHandler := handlers.NewOrderItemHandler(orderItemUseCase)
+
+	// Setup router
+	router := handlers.NewRouter(orderHandler, orderItemHandler)
+
+	// Start server
+	log.Printf("Order Service running on port %s", cfg.ServerPort)
+	if err := router.Run(":" + cfg.ServerPort); err != nil {
+		log.Fatal(err)
+	}
 }
