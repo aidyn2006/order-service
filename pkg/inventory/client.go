@@ -52,7 +52,7 @@ func (c *Client) GetProduct(ctx context.Context, productID uint) (*Product, erro
 }
 
 func (c *Client) UpdateProductStock(ctx context.Context, productID uint, quantity int) error {
-	url := fmt.Sprintf("%s/api/v1/products/%d/stock", c.baseURL, productID)
+	url := fmt.Sprintf("%s/api/v1/products/%d", c.baseURL, productID)
 
 	body := struct {
 		Stock int `json:"stock"`
@@ -65,7 +65,7 @@ func (c *Client) UpdateProductStock(ctx context.Context, productID uint, quantit
 		return fmt.Errorf("failed to marshal request body: %v", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "PATCH", url, bytes.NewBuffer(jsonBody))
+	req, err := http.NewRequestWithContext(ctx, "PUT", url, bytes.NewBuffer(jsonBody))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %v", err)
 	}
